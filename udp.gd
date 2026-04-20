@@ -1,29 +1,26 @@
 extends Node
-# Save this as UDPManager.gd and add to Autoload
 
 var udp := PacketPeerUDP.new()
 var listen_port := 4246
 var destination_port := 4247
 var destination_ip := "127.0.0.1"
 
+# Variables to store the commands for the Car
+var steering_input : float = 0.0
+var speed_input : float = 0.0
+
 func _ready():
-	if udp.bind(listen_port) == OK:
-		print("UDP: Listening on port ", listen_port)
-	else:
-		print("UDP: Failed to bind port!")
-
+	udp.bind(listen_port)
+	add_to_group("network_transceivers")
 func _process(_delta):
-	if udp.get_available_packet_count() > 0:
+	while udp.get_available_packet_count() > 0:
 		var packet = udp.get_packet()
-		# If MATLAB sends a double, we decode it
-		if packet.size() == 8:
-			var data = packet.decode_double(0)
-			print("UDP Received: ", data)
-		else:
-			print("UDP Received String: ", packet.get_string_from_utf8())
+		if packet.size() == 16:
+			steering_input = packet.decode_double(0)
+			speed_input = packet.decode_double(8)
+			# DEBUG MESSAGE
+			print("RECV FROM MATLAB -> Steer: %.2f, Speed: %.2f" % [steering_input, speed_input])
 
-# This function can be called from any other script
 func send_data(buffer: PackedByteArray):
-	print("sending data")
 	udp.set_dest_address(destination_ip, destination_port)
 	udp.put_packet(buffer)

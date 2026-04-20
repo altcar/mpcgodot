@@ -9,6 +9,8 @@
 [ext_resource type="PackedScene" uid="uid://bo55v7mk1vavq" path="res://road_demos/demo_resources/actors/RoadActor.tscn" id="7_ngsj0"]
 [ext_resource type="Script" uid="uid://cu6suoeluu2yg" path="res://im_ulaser.gd" id="8_qjr35"]
 
+[sub_resource type="CylinderMesh" id="CylinderMesh_qjr35"]
+
 [node name="Node3D" type="Node3D" unique_id=1827749448]
 
 [node name="udp" type="Node" parent="." unique_id=573170743 groups=["network_transceivers"]]
@@ -105,7 +107,6 @@ edge_rp_target_dirs = Array[int]([-1, 0, -1, -1])
 [node name="RoadActor3" parent="." unique_id=1490052960 instance=ExtResource("7_ngsj0")]
 transform = Transform3D(0.06609977, 0, 0.99781305, 0, 1, 0, -0.99781305, 0, 0.06609977, 804.08014, 0.5450134, -1.625375)
 script = ExtResource("7_alqfo")
-speed = 10.0
 
 [node name="IMUlaser" type="Node3D" parent="RoadActor3" unique_id=1576661588 groups=["network_transceivers"]]
 script = ExtResource("8_qjr35")
@@ -120,3 +121,7 @@ light_indirect_energy = 7.35
 light_volumetric_fog_energy = 4.725
 omni_range = 4096.0
 omni_attenuation = -0.084
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=341596553]
+transform = Transform3D(15.282305, 0, 0, 0, 13.141036, 0, 0, 0, 10.532145, 780.4943, 0, 0)
+mesh = SubResource("CylinderMesh_qjr35")
