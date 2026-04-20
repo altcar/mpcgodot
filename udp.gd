@@ -1,4 +1,5 @@
 extends Node
+# Save this as UDPManager.gd and add to Autoload
 
 var udp := PacketPeerUDP.new()
 var listen_port := 4246
@@ -6,24 +7,23 @@ var destination_port := 4247
 var destination_ip := "127.0.0.1"
 
 func _ready():
-	# Bind to the port to listen for MATLAB
 	if udp.bind(listen_port) == OK:
-		print("Listening on port ", listen_port)
+		print("UDP: Listening on port ", listen_port)
 	else:
-		print("Failed to bind port!")
+		print("UDP: Failed to bind port!")
 
 func _process(_delta):
-	# 1. Check for incoming packets
 	if udp.get_available_packet_count() > 0:
 		var packet = udp.get_packet()
-		# MATLAB sent a 'double' (8 bytes), so we decode it
-		var data = packet.decode_double(0) 
-		print("Received from MATLAB: ", data)
-		
-		# 2. Transmit back to MATLAB (The Loopback)
-		send_to_matlab("2")
+		# If MATLAB sends a double, we decode it
+		if packet.size() == 8:
+			var data = packet.decode_double(0)
+			print("UDP Received: ", data)
+		else:
+			print("UDP Received String: ", packet.get_string_from_utf8())
 
-func send_to_matlab(message: String):
+# This function can be called from any other script
+func send_data(buffer: PackedByteArray):
+	print("sending data")
 	udp.set_dest_address(destination_ip, destination_port)
-	var packet = message.to_utf8_buffer()
-	udp.put_packet(packet)
+	udp.put_packet(buffer)
