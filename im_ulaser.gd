@@ -13,7 +13,7 @@ func _ready():
 	last_pos = global_position
 	last_rot = global_transform.basis.get_rotation_quaternion()
 
-const LOOKAHEAD_HORIZONS = [0.0, 5.0, 10.0, 15.0, 20.0]
+const LOOKAHEAD_HORIZONS = [0.0, 2.5, 5.0, 7.5, 10.0]
 var horizon_visuals: Array[MeshInstance3D] = []
 
 func _physics_process(delta: float):

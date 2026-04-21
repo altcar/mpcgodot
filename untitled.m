@@ -36,7 +36,8 @@ function mpc_main()
     
     % Subplot 3: NMPC CTE Horizon
     subplot(2,2,4);
-    hCTE = plot(0:5:20, zeros(1, 5), 'r-o', 'LineWidth', 2, 'MarkerFaceColor', 'r');
+    cte_distances = [0 2.5 5 7.5 10];
+    hCTE = plot(cte_distances, zeros(1, 5), 'r-o', 'LineWidth', 2, 'MarkerFaceColor', 'r');
     yline(0, 'k--', 'Center Line', 'LineWidth', 1.5);
     title('Look-ahead CTE & NMPC Tracking');
     xlabel('Look-ahead Distance (m)'); ylabel('CTE (m)');
@@ -110,10 +111,15 @@ function opt_steer = lane_following_nmpc(state, cte_horizon, v, last_steer)
     % We want to find a sequence of omega [w1, w2, w3, w4, w5] that minimizes future CTE
     
     N = 5;
-    dt = 5.0 / v; % Time to travel 5 meters (lookahead spacing)
+    horizon_step_m = 2.5;
+    dt = horizon_step_m / v; % Time to travel one lookahead step
+    lane_width = 3.5;
+    vehicle_width = 2.0;
+    wheel_margin = 0.10; % keep a small safety margin from lane boundaries
+    max_center_error = (lane_width - vehicle_width) / 2.0 - wheel_margin;
     
     % Objective Function
-    obj_fun = @(w) compute_nmpc_cost(w, cte_horizon, dt, v, last_steer);
+    obj_fun = @(w) compute_nmpc_cost(w, cte_horizon, dt, v, last_steer, max_center_error);
     
     % Constraints (Max yaw rate)
     lb = -1.5 * ones(N, 1);
@@ -130,7 +136,7 @@ function opt_steer = lane_following_nmpc(state, cte_horizon, v, last_steer)
     opt_steer = w_opt(1);
 end
 
-function cost = compute_nmpc_cost(w, cte_ref, dt, v, last_steer)
+function cost = compute_nmpc_cost(w, cte_ref, dt, v, last_steer, max_center_error)
     N = length(w);
     cost = 0;
     
@@ -138,9 +144,10 @@ function cost = compute_nmpc_cost(w, cte_ref, dt, v, last_steer)
     y = 0;     % Lateral deviation from current car position (starts at 0)
     theta = 0; % Heading deviation (starts at 0)
     
-    W_cte = 100.0; % Weight for tracking the road center
-    W_u = 5.0;     % Weight for steering magnitude
-    W_du = 50.0;   % Weight for steering smoothness (Increased to reduce oscillation)
+    W_cte = 100.0;  % Weight for tracking the road center
+    W_u = 5.0;      % Weight for steering magnitude
+    W_du = 50.0;    % Weight for steering smoothness (Increased to reduce oscillation)
+    W_edge = 1200.0; % Strong penalty if car body approaches/exceeds lane edges
     
     prev_w = last_steer;
     
@@ -153,8 +160,9 @@ function cost = compute_nmpc_cost(w, cte_ref, dt, v, last_steer)
         % The lookahead cte_ref(k) is the offset of the ROAD relative to the STARTING car frame.
         % So to minimize displacement from center, our predicted y should match cte_ref(k).
         err = y - cte_ref(k);
+        edge_excess = max(0.0, abs(err) - max_center_error);
         
-        cost = cost + W_cte * (err^2) + W_u * (w(k)^2) + W_du * ((w(k) - prev_w)^2);
+        cost = cost + W_cte * (err^2) + W_u * (w(k)^2) + W_du * ((w(k) - prev_w)^2) + W_edge * (edge_excess^2);
         prev_w = w(k);
     end
-end
+end
